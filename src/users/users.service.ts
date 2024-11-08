@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login_user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/users.schema';
@@ -9,7 +10,7 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(@InjectModel(User.name) private userModel: Model<User>,private configService: ConfigService,) {}
 
   async getUsers(): Promise<User[]> {
     const users : User[] = await this.userModel.find();
@@ -34,7 +35,7 @@ export class UsersService {
   async register(createUserDto: CreateUserDto): Promise<User> {
     let user : User = await this.userModel.findOne({email: createUserDto.email})
     if(!user){
-      const saltOrRounds : number= 12;
+      const saltOrRounds = this.configService.get<number>('SALTORROUNDS'); 
       const hashedPassword: string = await bcrypt.hash(createUserDto.password,saltOrRounds);
       user = await new this.userModel({
         ...createUserDto,
