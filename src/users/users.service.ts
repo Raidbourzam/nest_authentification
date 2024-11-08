@@ -5,6 +5,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/users.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -21,8 +22,9 @@ export class UsersService {
   async login(loginUserDto: LoginUserDto): Promise<User> {
     let user : User = await this.userModel.findOne({email: loginUserDto.email});
     if(user){
-      if(user.password !== loginUserDto.password){
-        throw new NotFoundException({message:'check ur credintials'})
+      const isValidPassword = await bcrypt.compare(loginUserDto.password,user.password)
+      if(!isValidPassword){
+        throw new NotFoundException({message:'Invalid credintials'})
       }
       return user;
     }
@@ -32,7 +34,12 @@ export class UsersService {
   async register(createUserDto: CreateUserDto): Promise<User> {
     let user : User = await this.userModel.findOne({email: createUserDto.email})
     if(!user){
-      user = await new this.userModel(createUserDto);
+      const saltOrRounds : number= 12;
+      const hashedPassword: string = await bcrypt.hash(createUserDto.password,saltOrRounds);
+      user = await new this.userModel({
+        ...createUserDto,
+        password: hashedPassword,
+      });
       const newUser: User= await user.save();
       return newUser;
     }
