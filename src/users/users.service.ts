@@ -7,10 +7,16 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/users.schema';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>,private configService: ConfigService,) {}
+  constructor(
+    @InjectModel(User.name) 
+    private userModel: Model<User>,
+    private configService: ConfigService,
+    private jwtService: JwtService,
+  ) {}
 
   async getUsers(): Promise<User[]> {
     const users : User[] = await this.userModel.find();
@@ -20,14 +26,15 @@ export class UsersService {
     return users;    
   }
 
-  async login(loginUserDto: LoginUserDto): Promise<User> {
+  async login(loginUserDto: LoginUserDto): Promise<{token: string}> {
     let user : User = await this.userModel.findOne({email: loginUserDto.email});
     if(user){
       const isValidPassword = await bcrypt.compare(loginUserDto.password,user.password)
       if(!isValidPassword){
         throw new NotFoundException({message:'Invalid credintials'})
       }
-      return user;
+      const token: string = this.jwtService.sign({id: user._id});
+      return {token};
     }
     throw new NotFoundException({message:'user dont exist'})
   }

@@ -15,7 +15,7 @@ export class UsersController {
   }
 
   @Post('login')
-  async loginUser(@Body() loginUserDto : LoginUserDto) : Promise<User>{
+  async loginUser(@Body() loginUserDto : LoginUserDto) : Promise<{token: string}>{
     return await this.usersService.login(loginUserDto);
   }
 
