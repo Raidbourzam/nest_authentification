@@ -35,7 +35,7 @@ export class UsersService {
   async register(createUserDto: CreateUserDto): Promise<User> {
     let user : User = await this.userModel.findOne({email: createUserDto.email})
     if(!user){
-      const saltOrRounds = this.configService.get<number>('SALTORROUNDS'); 
+      const saltOrRounds = parseInt(this.configService.get<string>('SALTORROUNDS'),10); 
       const hashedPassword: string = await bcrypt.hash(createUserDto.password,saltOrRounds);
       user = await new this.userModel({
         ...createUserDto,
